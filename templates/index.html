@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pixel Deal Aggregator (Toronto/GTA)</title>
+<style>
+  :root {
+    --bg: #0e1014;
+    --panel: #161a22;
+    --panel2: #1d2230;
+    --text: #e6e9ef;
+    --muted: #8b93a7;
+    --accent: #7c9eff;
+    --good: #5dd693;
+    --bad: #ff7676;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 280px 1fr; gap: 16px; }
+  header { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; padding: 4px 0 12px; border-bottom: 1px solid var(--panel2); }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .meta { color: var(--muted); font-size: 12px; }
+  .panel { background: var(--panel); border: 1px solid var(--panel2); border-radius: 8px; padding: 14px; }
+  .panel h2 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  .slider-row { display: grid; grid-template-columns: 60px 1fr 50px; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px; }
+  .slider-row label { color: var(--muted); }
+  .slider-row input[type=range] { width: 100%; accent-color: var(--accent); }
+  .slider-row .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .stat { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .stat .v { color: var(--accent); font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--panel2); }
+  th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:hover { background: var(--panel2); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .pill { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+  .pill.used { background: rgba(124,158,255,.15); color: var(--accent); }
+  .pill.refurbished { background: rgba(93,214,147,.15); color: var(--good); }
+  .pill.new { background: rgba(255,118,118,.15); color: var(--bad); }
+  .deal-bar { display: inline-block; width: 60px; height: 6px; background: var(--panel2); border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+  .deal-bar > span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .footer { grid-column: 1 / -1; text-align: center; color: var(--muted); font-size: 11px; padding: 12px; }
+  .loading { opacity: .55; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid #2a3140; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
+  button:hover { background: #2a3140; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Pixel Deal Aggregator &mdash; Toronto / GTA</h1>
+    <div class="meta">
+      <span id="db-meta">loading...</span>
+      &middot;
+      <span id="last-update"></span>
+      &middot;
+      <button onclick="refresh()">Refresh</button>
+    </div>
+  </header>
+
+  <aside class="panel" id="sidebar">
+    <h2>Score Weights</h2>
+    <div class="slider-row"><label>CPU</label><input type="range" id="w-cpu" min="0" max="1" step="0.05" value="{{ weights.cpu }}"><span class="val" id="v-cpu">{{ '%.2f' % weights.cpu }}</span></div>
+    <div class="slider-row"><label>Battery</label><input type="range" id="w-battery" min="0" max="1" step="0.05" value="{{ weights.battery }}"><span class="val" id="v-battery">{{ '%.2f' % weights.battery }}</span></div>
+    <div class="slider-row"><label>Camera</label><input type="range" id="w-camera" min="0" max="1" step="0.05" value="{{ weights.camera }}"><span class="val" id="v-camera">{{ '%.2f' % weights.camera }}</span></div>
+    <div class="slider-row"><label>Display</label><input type="range" id="w-display" min="0" max="1" step="0.05" value="{{ weights.display }}"><span class="val" id="v-display">{{ '%.2f' % weights.display }}</span></div>
+    <div class="slider-row"><label>Weight</label><input type="range" id="w-form_factor" min="0" max="1" step="0.05" value="{{ weights.form_factor }}"><span class="val" id="v-form_factor">{{ '%.2f' % weights.form_factor }}</span></div>
+
+    <h2 style="margin-top:18px">Database</h2>
+    <div class="stat"><span>Phone specs</span><span class="v" id="s-specs">{{ db.specs }}</span></div>
+    <div class="stat"><span>Listings</span><span class="v" id="s-listings">{{ db.listings }}</span></div>
+    <div class="stat"><span>FX rates cached</span><span class="v" id="s-fx">{{ db.fx }}</span></div>
+  </aside>
+
+  <main class="panel">
+    <h2>Top Deals <span id="rank-count" style="color:var(--accent)"></span></h2>
+    <div id="table-wrap" class="loading">Loading deals...</div>
+  </main>
+
+  <div class="footer">
+    Static min-max normalization. NetCost = (price + shipping) &times; 1.13 (Ontario HST). DealScore = (Quality / NetCost) &times; 1000.
+  </div>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

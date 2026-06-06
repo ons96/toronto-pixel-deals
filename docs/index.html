@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toronto/GTA Pixel Deal Hunter</title>
+<style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0a0e1a;color:#e2e8f0;line-height:1.5;padding:2rem 1rem}
+    .container{max-width:1400px;margin:0 auto}
+    header{text-align:center;margin-bottom:2rem;padding:2rem;background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);border-radius:12px;border:1px solid #334155}
+    h1{font-size:2.5rem;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:0.5rem}
+    .subtitle{color:#94a3b8;font-size:1.1rem;margin-bottom:1rem}
+    .stats{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:1rem}
+    .stat{background:#1e293b;padding:0.75rem 1.25rem;border-radius:8px;border:1px solid #334155}
+    .stat-value{font-size:1.5rem;font-weight:700;color:#60a5fa}
+    .stat-label{font-size:0.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em}
+    table{width:100%;border-collapse:collapse;background:#0f172a;border-radius:8px;overflow:hidden;border:1px solid #1e293b}
+    th{background:#1e293b;padding:0.75rem;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:600;border-bottom:1px solid #334155}
+    td{padding:0.75rem;border-bottom:1px solid #1e293b;font-size:0.9rem}
+    tr:hover td{background:#1e293b40}
+    .rank{font-weight:700;color:#60a5fa;font-family:'SF Mono',Monaco,monospace;width:50px}
+    .phone-name{font-weight:600;color:#f1f5f9}
+    .phone-sub{font-size:0.75rem;color:#64748b;margin-top:0.15rem}
+    .pill{display:inline-block;padding:0.2rem 0.6rem;border-radius:12px;font-size:0.7rem;font-weight:600;border:1px solid}
+    .src{color:#94a3b8;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em}
+    .num{font-family:'SF Mono',Monaco,monospace;text-align:right;white-space:nowrap}
+    .bar{position:relative;background:#1e293b;border-radius:4px;height:22px;width:140px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:4px;transition:width 0.3s}
+    .bar-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.75rem;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5)}
+    .loc{font-size:0.8rem;color:#94a3b8}
+    .link{color:#60a5fa;text-decoration:none;font-size:0.8rem}
+    .link:hover{text-decoration:underline}
+    .empty{text-align:center;padding:3rem;color:#64748b}
+    .meta{background:#0f172a;padding:1.5rem;border-radius:8px;border:1px solid #1e293b;margin-top:2rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem}
+    .meta h3{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#60a5fa;margin-bottom:0.5rem}
+    .meta p,.meta code{font-size:0.85rem;color:#cbd5e1}
+    .meta code{background:#1e293b;padding:0.15rem 0.4rem;border-radius:3px;font-size:0.8rem}
+    footer{text-align:center;margin-top:2rem;padding:1.5rem;color:#64748b;font-size:0.85rem}
+    footer a{color:#60a5fa;text-decoration:none}
+    footer a:hover{text-decoration:underline}
+    </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Toronto/GTA Pixel Deal Hunter</h1>
+    <p class="subtitle">Used & refurbished Google Pixel (4a→9) + mid-range alternatives, ranked by quality-per-dollar in CAD</p>
+    <div class="stats">
+      <div class="stat"><div class="stat-value">32</div><div class="stat-label">Listings</div></div>
+      <div class="stat"><div class="stat-value">22</div><div class="stat-label">Phone Models</div></div>
+      <div class="stat"><div class="stat-value">15</div><div class="stat-label">Top Deals</div></div>
+      <div class="stat"><div class="stat-value">2026-06-06 22:39 UTC</div><div class="stat-label">Last Updated</div></div>
+    </div>
+  </header>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>Phone</th><th>Source</th><th>Condition</th>
+        <th>Price</th><th>Net Cost</th><th>Quality</th><th>Deal Score</th>
+        <th>Location</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      
+        <tr>
+          <td class="rank">#1</td>
+          <td>
+            <div class="phone-name">Nord CE 3 Lite</div>
+            <div class="phone-sub">SD 695 · 5000 mAh · 108 MP</div>
+          </td>
+          <td><span class="src">kijiji</span></td>
+          <td><span class="pill" style="background:#84cc1622;color:#84cc16;border-color:#84cc1655">Good</span></td>
+          <td class="num">$207</td>
+          <td class="num">$234</td>
+          <td class="num">45.5</td>
+          <td><div class="bar"><div class="bar-fill" style="width:100%;background:#10b981"></div><span class="bar-text">194.5</span></div></td>
+          <td class="loc">Toronto, ON</td>
+          <td><a href="https://www.kijiji.ca/b-cell-phone/gta-greater-toronto-area/cellphones/q-oneplus-nord-ce-3-lite/" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#2</td>
+          <td>
+            <div class="phone-name">Pixel 6a</div>
+            <div class="phone-sub">Tensor · 4410 mAh · 12.2 MP</div>
+          </td>
+          <td><span class="src">ebay</span></td>
+          <td><span class="pill" style="background:#3b82f622;color:#3b82f6;border-color:#3b82f655">Refurbished</span></td>
+          <td class="num">$197</td>
+          <td class="num">$223</td>
+          <td class="num">35.4</td>
+          <td><div class="bar"><div class="bar-fill" style="width:82%;background:#10b981"></div><span class="bar-text">159.1</span></div></td>
+          <td class="loc">Oshawa, ON</td>
+          <td><a href="https://www.ebay.ca/sch/i.html?_nkw=google-pixel-6a&amp;_sacat=0&amp;LH_ItemCondition=3000" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#3</td>
+          <td>
+            <div class="phone-name">Pixel 7a</div>
+            <div class="phone-sub">Tensor G2 · 4385 mAh · 64 MP</div>
+          </td>
+          <td><span class="src">ebay</span></td>
+          <td><span class="pill" style="background:#f59e0b22;color:#f59e0b;border-color:#f59e0b55">Used</span></td>
+          <td class="num">$267</td>
+          <td class="num">$302</td>
+          <td class="num">42.8</td>
+          <td><div class="bar"><div class="bar-fill" style="width:73%;background:#10b981"></div><span class="bar-text">141.9</span></div></td>
+          <td class="loc">North York, ON</td>
+          <td><a href="https://www.ebay.ca/sch/i.html?_nkw=google-pixel-7a&amp;_sacat=0&amp;LH_ItemCondition=3000" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#4</td>
+          <td>
+            <div class="phone-name">Pixel 4a 5G</div>
+            <div class="phone-sub">SD 765G · 3885 mAh · 12.2 MP</div>
+          </td>
+          <td><span class="src">ebay</span></td>
+          <td><span class="pill" style="background:#f59e0b22;color:#f59e0b;border-color:#f59e0b55">Used</span></td>
+          <td class="num">$140</td>
+          <td class="num">$158</td>
+          <td class="num">22.2</td>
+          <td><div class="bar"><div class="bar-fill" style="width:72%;background:#10b981"></div><span class="bar-text">140.1</span></div></td>
+          <td class="loc">Pickering, ON</td>
+          <td><a href="https://www.ebay.ca/sch/i.html?_nkw=google-pixel-4a-5g&amp;_sacat=0&amp;LH_ItemCondition=3000" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#5</td>
+          <td>
+            <div class="phone-name">Pixel 6</div>
+            <div class="phone-sub">Tensor · 4614 mAh · 50 MP</div>
+          </td>
+          <td><span class="src">kijiji</span></td>
+          <td><span class="pill" style="background:#84cc1622;color:#84cc16;border-color:#84cc1655">Good</span></td>
+          <td class="num">$266</td>
+          <td class="num">$301</td>
+          <td class="num">42.1</td>
+          <td><div class="bar"><div class="bar-fill" style="width:72%;background:#10b981"></div><span class="bar-text">140.0</span></div></td>
+          <td class="loc">Whitby, ON</td>
+          <td><a href="https://www.kijiji.ca/b-cell-phone/gta-greater-toronto-area/cellphones/q-google-pixel-6/" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#6</td>
+          <td>
+            <div class="phone-name">Pixel 5a 5G</div>
+            <div class="phone-sub">SD 765G · 4680 mAh · 12.2 MP</div>
+          </td>
+          <td><span class="src">kijiji</span></td>
+          <td><span class="pill" style="background:#84cc1622;color:#84cc16;border-color:#84cc1655">Good</span></td>
+          <td class="num">$172</td>
+          <td class="num">$194</td>
+          <td class="num">26.9</td>
+          <td><div class="bar"><div class="bar-fill" style="width:71%;background:#10b981"></div><span class="bar-text">138.3</span></div></td>
+          <td class="loc">Vaughan, ON</td>
+          <td><a href="https://www.kijiji.ca/b-cell-phone/gta-greater-toronto-area/cellphones/q-google-pixel-5a-5g/" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#7</td>
+          <td>
+            <div class="phone-name">Pixel 4a</div>
+            <div class="phone-sub">SD 730G · 3140 mAh · 12.2 MP</div>
+          </td>
+          <td><span class="src">kijiji</span></td>
+          <td><span class="pill" style="background:#84cc1622;color:#84cc16;border-color:#84cc1655">Good</span></td>
+          <td class="num">$108</td>
+          <td class="num">$122</td>
+          <td class="num">16.2</td>
+          <td><div class="bar"><div class="bar-fill" style="width:68%;background:#3b82f6"></div><span class="bar-text">132.9</span></div></td>
+          <td class="loc">Etobicoke, ON</td>
+          <td><a href="https://www.kijiji.ca/b-cell-phone/gta-greater-toronto-area/cellphones/q-google-pixel-4a/" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#8</td>
+          <td>
+            <div class="phone-name">Pixel 6a</div>
+            <div class="phone-sub">Tensor · 4410 mAh · 12.2 MP</div>
+          </td>
+          <td><span class="src">kijiji</span></td>
+          <td><span class="pill" style="background:#84cc1622;color:#84cc16;border-color:#84cc1655">Good</span></td>
+          <td class="num">$240</td>
+          <td class="num">$271</td>
+          <td class="num">35.4</td>
+          <td><div class="bar"><div class="bar-fill" style="width:67%;background:#3b82f6"></div><span class="bar-text">130.6</span></div></td>
+          <td class="loc">Ajax, ON</td>
+          <td><a href="https://www.kijiji.ca/b-cell-phone/gta-greater-toronto-area/cellphones/q-google-pixel-6a/" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#9</td>
+          <td>
+            <div class="phone-name">Pixel 7</div>
+            <div class="phone-sub">Tensor G2 · 4355 mAh · 50 MP</div>
+          </td>
+          <td><span class="src">reddit:r/CanadianHardwareSwap</span></td>
+          <td><span class="pill" style="background:#6b728022;color:#6b7280;border-color:#6b728055">used</span></td>
+          <td class="num">$280</td>
+          <td class="num">$316</td>
+          <td class="num">40.9</td>
+          <td><div class="bar"><div class="bar-fill" style="width:66%;background:#3b82f6"></div><span class="bar-text">129.1</span></div></td>
+          <td class="loc">Toronto, ON</td>
+          <td><a href="https://www.reddit.com/r/CanadianHardwareSwap/comments/sample-1" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#10</td>
+          <td>
+            <div class="phone-name">Galaxy A54</div>
+            <div class="phone-sub">Exynos 1380 · 5000 mAh · 50 MP</div>
+          </td>
+          <td><span class="src">kijiji</span></td>
+          <td><span class="pill" style="background:#84cc1622;color:#84cc16;border-color:#84cc1655">Good</span></td>
+          <td class="num">$284</td>
+          <td class="num">$321</td>
+          <td class="num">39.6</td>
+          <td><div class="bar"><div class="bar-fill" style="width:63%;background:#3b82f6"></div><span class="bar-text">123.3</span></div></td>
+          <td class="loc">Ajax, ON</td>
+          <td><a href="https://www.kijiji.ca/b-cell-phone/gta-greater-toronto-area/cellphones/q-samsung-galaxy-a54/" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#11</td>
+          <td>
+            <div class="phone-name">Pixel 7</div>
+            <div class="phone-sub">Tensor G2 · 4355 mAh · 50 MP</div>
+          </td>
+          <td><span class="src">reddit</span></td>
+          <td><span class="pill" style="background:#22c55e22;color:#22c55e;border-color:#22c55e55">Excellent</span></td>
+          <td class="num">$294</td>
+          <td class="num">$332</td>
+          <td class="num">40.9</td>
+          <td><div class="bar"><div class="bar-fill" style="width:63%;background:#3b82f6"></div><span class="bar-text">123.0</span></div></td>
+          <td class="loc">Vaughan, ON</td>
+          <td><a href="https://www.reddit.com/r/CanadianHardwareSwap/search/?q=google-pixel-7&amp;restrict_sr=on" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#12</td>
+          <td>
+            <div class="phone-name">Pixel 7a</div>
+            <div class="phone-sub">Tensor G2 · 4385 mAh · 64 MP</div>
+          </td>
+          <td><span class="src">kijiji</span></td>
+          <td><span class="pill" style="background:#84cc1622;color:#84cc16;border-color:#84cc1655">Good</span></td>
+          <td class="num">$313</td>
+          <td class="num">$354</td>
+          <td class="num">42.8</td>
+          <td><div class="bar"><div class="bar-fill" style="width:62%;background:#3b82f6"></div><span class="bar-text">121.1</span></div></td>
+          <td class="loc">Oakville, ON</td>
+          <td><a href="https://www.kijiji.ca/b-cell-phone/gta-greater-toronto-area/cellphones/q-google-pixel-7a/" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#13</td>
+          <td>
+            <div class="phone-name">Galaxy S21 FE</div>
+            <div class="phone-sub">SD 888 · 4500 mAh · 12 MP</div>
+          </td>
+          <td><span class="src">ebay</span></td>
+          <td><span class="pill" style="background:#3b82f622;color:#3b82f6;border-color:#3b82f655">Refurbished</span></td>
+          <td class="num">$300</td>
+          <td class="num">$339</td>
+          <td class="num">39.9</td>
+          <td><div class="bar"><div class="bar-fill" style="width:60%;background:#3b82f6"></div><span class="bar-text">117.6</span></div></td>
+          <td class="loc">Markham, ON</td>
+          <td><a href="https://www.ebay.ca/sch/i.html?_nkw=samsung-galaxy-s21-fe&amp;_sacat=0&amp;LH_ItemCondition=3000" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#14</td>
+          <td>
+            <div class="phone-name">Pixel 5</div>
+            <div class="phone-sub">SD 765G · 4080 mAh · 12.2 MP</div>
+          </td>
+          <td><span class="src">kijiji</span></td>
+          <td><span class="pill" style="background:#84cc1622;color:#84cc16;border-color:#84cc1655">Good</span></td>
+          <td class="num">$190</td>
+          <td class="num">$215</td>
+          <td class="num">24.6</td>
+          <td><div class="bar"><div class="bar-fill" style="width:59%;background:#3b82f6"></div><span class="bar-text">114.7</span></div></td>
+          <td class="loc">Scarborough, ON</td>
+          <td><a href="https://www.kijiji.ca/b-cell-phone/gta-greater-toronto-area/cellphones/q-google-pixel-5/" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+
+        <tr>
+          <td class="rank">#15</td>
+          <td>
+            <div class="phone-name">Pixel 8a</div>
+            <div class="phone-sub">Tensor G3 · 4492 mAh · 64 MP</div>
+          </td>
+          <td><span class="src">ebay</span></td>
+          <td><span class="pill" style="background:#3b82f622;color:#3b82f6;border-color:#3b82f655">Refurbished</span></td>
+          <td class="num">$362</td>
+          <td class="num">$409</td>
+          <td class="num">46.6</td>
+          <td><div class="bar"><div class="bar-fill" style="width:59%;background:#3b82f6"></div><span class="bar-text">113.9</span></div></td>
+          <td class="loc">Markham, ON</td>
+          <td><a href="https://www.ebay.ca/sch/i.html?_nkw=google-pixel-8a&amp;_sacat=0&amp;LH_ItemCondition=3000" target="_blank" rel="noopener" class="link">View</a></td>
+        </tr>
+    </tbody>
+  </table>
+
+  <div class="meta">
+    <div>
+      <h3>Scoring Weights</h3>
+      <p>cpu: 40%, battery: 25%, camera: 25%, display: 5%, form_factor: 5%</p>
+      <p style="margin-top:0.5rem;color:#94a3b8;font-size:0.75rem">Adjustable via the local Flask app (<code>uv run python -m src.app</code>)</p>
+    </div>
+    <div>
+      <h3>Deal Score Formula</h3>
+      <p><code>NetCost = (Price + Ship) × 1.13</code> (Ontario HST)</p>
+      <p><code>Quality = 100 × Σ(weight × normalized_spec)</code></p>
+      <p><code>Deal = (Quality / NetCost) × 1000</code></p>
+    </div>
+    <div>
+      <h3>Data Sources</h3>
+      <p>eBay Browse API · Reddit JSON · Kijiji · Frankfurter FX</p>
+      <p style="margin-top:0.5rem;color:#94a3b8;font-size:0.75rem">Specs baseline: curated (Paxsenix + Wikidata + GSMArena)</p>
+    </div>
+  </div>
+
+  <footer>
+    <p><a href="https://github.com/ons96/toronto-pixel-deals">Source code</a> · <a href="https://ons96.github.io/toronto-pixel-deals/">View this site</a> · MIT licensed</p>
+    <p style="margin-top:0.5rem">Generated by <code>src/generate_report.py</code> · Refresh via <code>bash scripts/update_site.sh</code></p>
+  </footer>
+</div>
+</body>
+</html>
