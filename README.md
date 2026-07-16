@@ -82,6 +82,11 @@ with RapidAPI-style usage caps. It is **additive** -- it imports and reuses
 `score.py` / `db.py` / `config.py` without duplicating them, and the Flask UI
 (`app.py`) stays functional for browsing.
 
+**Deployment status:** the current service is private staging, not
+publish-ready. Before creating a RapidAPI listing, it needs public HTTPS
+ingress, a verified recurring refresh, a source-terms review, and an external
+end-to-end test.
+
 ### Run
 
 ```bash
@@ -98,9 +103,9 @@ Interactive docs at `http://localhost:8100/docs`.
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/health` | none (not counted) | `{"status":"ok","db":counts(),"version":"1.0"}` |
-| GET | `/deals/top` | counted | `n` (1-500), weight overrides `cpu/battery/camera/display/form_factor` (0-1), `include_unknown` |
-| GET | `/deals/refresh` | counted + Pro+ tier | triggers a fetch; 503 on network/CF failure, 403 below Pro |
+| GET | `/health` | none (not counted) | row counts plus exact database freshness metadata |
+| GET | `/deals/top` | counted | `n` (1-500), weight overrides `cpu/battery/camera/display/form_factor` (0-1), `include_unknown`; response includes freshness metadata |
+| GET | `/deals/refresh` | counted + Pro+ tier | triggers a fetch; 503 on network/CF failure, 403 below Pro; successful response includes freshness metadata |
 | GET | `/specs/{slug}` | counted | 404 if slug not found |
 | GET | `/specs` | counted | all specs |
 
@@ -113,6 +118,11 @@ Send one header per request:
 Missing or unknown key returns `401`. Over the daily limit returns `429` with
 `limit`, `used`, `tier`, and `resets_at` (next midnight UTC). `/health` is not
 counted, so uptime checks do not burn quota.
+
+`freshness` preserves the exact stored database values: `MAX(listings.fetched_at)`,
+`MAX(specs.fetched_at)`, and `MAX(fx_rates.as_of)`. Its fields are
+`listings_fetched_at`, `specs_fetched_at`, and `fx_rates_as_of`; each is `null`
+when its table has no rows.
 
 ### Tiers
 
@@ -130,10 +140,13 @@ an `api_usage` table partitioned by date; SQLite is the single source of truth o
 this single-process deploy (see the `ponytail:` note in `src/api.py` for the
 upgrade path to Redis if you scale to multiple workers).
 
-### Deploy
+### Deployment status
 
-See `deploy/vps40-deploy.sh` (idempotent, targets VPS-40 on port 8100) and the
-RapidAPI listing copy at `docs/RAPIDAPI_LISTING.md`.
+The current deployment is private staging and is not publish-ready. Do not
+create a RapidAPI listing until public HTTPS ingress, a verified recurring
+refresh, source-terms review, and an external end-to-end test are complete.
+`deploy/vps40-deploy.sh` remains a private deployment reference; see the draft
+listing copy at `docs/RAPIDAPI_LISTING.md`.
 
 ### Tests
 

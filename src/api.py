@@ -26,6 +26,7 @@ from src.db import (
     all_listings,
     all_specs,
     counts,
+    freshness,
     get_api_key,
     incr_usage,
     init_db,
@@ -167,7 +168,12 @@ def _spec_to_public(s) -> dict:
 @app.get("/health")
 def health() -> dict:
     """Liveness + DB row counts. Not auth-gated, not rate-counted."""
-    return {"status": "ok", "db": counts(), "version": API_VERSION}
+    return {
+        "status": "ok",
+        "db": counts(),
+        "freshness": freshness(),
+        "version": API_VERSION,
+    }
 
 
 @app.get("/deals/top")
@@ -195,6 +201,7 @@ def deals_top(
         "weights": weights.normalized().__dict__,
         "count": len(ranked),
         "deals": ranked,
+        "freshness": freshness(),
         "tier": caller["tier"],
         "used": caller["used"],
         "limit": caller["limit"],
@@ -259,6 +266,7 @@ def deals_refresh(
         content={
             "status": "refreshed",
             "db": counts(),
+            "freshness": freshness(),
             "stdout_tail": (proc.stdout or "").strip().splitlines()[-1] if proc.stdout else "",
         },
     )

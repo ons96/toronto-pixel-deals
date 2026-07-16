@@ -235,6 +235,24 @@ def counts() -> dict[str, int]:
         }
 
 
+def freshness() -> dict[str, str | None]:
+    """Latest stored source timestamps, or None where the table has no rows."""
+    with conn_ctx() as c:
+        row = c.execute(
+            """
+            SELECT
+                (SELECT MAX(fetched_at) FROM listings) AS listings_fetched_at,
+                (SELECT MAX(fetched_at) FROM specs) AS specs_fetched_at,
+                (SELECT MAX(as_of) FROM fx_rates) AS fx_rates_as_of
+            """
+        ).fetchone()
+    return {
+        "listings_fetched_at": row["listings_fetched_at"],
+        "specs_fetched_at": row["specs_fetched_at"],
+        "fx_rates_as_of": row["fx_rates_as_of"],
+    }
+
+
 # --- API key + usage helpers (RapidAPI-style usage caps) ---
 # ponytail: SQLite single-writer is the ceiling here. The VPS deploy is a
 # single uvicorn process, so there is no write contention. Upgrade path: move

@@ -7,7 +7,6 @@ or the inline smoke:
 """
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -18,25 +17,40 @@ sys.path.insert(0, str(ROOT))
 import pytest
 from fastapi.testclient import TestClient
 
+from src import db
 from src.api import app
-from src.db import DEMO_KEY, init_db
-
-
-@pytest.fixture(scope="module", autouse=True)
-def _ready_db():
-    """Make sure the schema + demo key exist and the DB has seed data."""
-    init_db()
-    # Seed offline sample data so /deals/top has content to rank.
-    # kimovil.seed_static loads the curated static_specs.json (specs table);
-    # reddit.load_sample_data loads the 3 sample listings.
-    from src import kimovil, reddit
-    kimovil.seed_static()
-    reddit.load_sample_data()
-    yield
+from src.db import DEMO_KEY
 
 
 @pytest.fixture()
-def client():
+def empty_db(monkeypatch, tmp_path):
+    """Route all DB helpers to a fresh database for each test."""
+    path = tmp_path / "deals.db"
+    db.init_db(path)
+    real_conn_ctx = db.conn_ctx
+    monkeypatch.setattr(db, "conn_ctx", lambda: real_conn_ctx(path))
+    return path
+
+
+@pytest.fixture()
+def seeded_db(empty_db):
+    """Seed deterministic offline rows for endpoint tests that need deals."""
+    from src.kimovil import load_static_specs
+    from src.reddit import SAMPLE_LISTINGS
+
+    db.upsert_specs(load_static_specs())
+    for listing in SAMPLE_LISTINGS:
+        db.upsert_listing(listing)
+    return empty_db
+
+
+@pytest.fixture()
+def client(seeded_db):
+    return TestClient(app)
+
+
+@pytest.fixture()
+def empty_client(empty_db):
     return TestClient(app)
 
 
@@ -46,7 +60,60 @@ def test_health_no_auth_not_counted(client):
     body = r.json()
     assert body["status"] == "ok"
     assert "db" in body
+    assert "freshness" in body
     assert body["version"]
+
+
+def test_freshness_is_null_for_empty_db(empty_client):
+    expected = {
+        "listings_fetched_at": None,
+        "specs_fetched_at": None,
+        "fx_rates_as_of": None,
+    }
+
+    health = empty_client.get("/health")
+    assert health.status_code == 200
+    assert health.json()["freshness"] == expected
+
+    deals = empty_client.get("/deals/top", headers={"X-API-Key": DEMO_KEY})
+    assert deals.status_code == 200, deals.text
+    assert deals.json()["count"] == 0
+    assert deals.json()["freshness"] == expected
+
+
+def test_freshness_reports_exact_database_maxima(client):
+    expected = {
+        "listings_fetched_at": "2026-03-04T05:06:07Z",
+        "specs_fetched_at": "2026-02-03T04:05:06Z",
+        "fx_rates_as_of": "2026-01-02",
+    }
+    with db.conn_ctx() as conn:
+        conn.execute("UPDATE listings SET fetched_at=?", ("2026-03-01T00:00:00Z",))
+        conn.execute("UPDATE specs SET fetched_at=?", ("2026-02-01T00:00:00Z",))
+        conn.execute(
+            "INSERT INTO listings(source, external_id, fetched_at) VALUES (?,?,?)",
+            ("test", "latest-listing", expected["listings_fetched_at"]),
+        )
+        conn.execute(
+            "INSERT INTO specs(slug, brand, model, fetched_at) VALUES (?,?,?,?)",
+            ("test-phone", "Test", "Phone", expected["specs_fetched_at"]),
+        )
+        conn.execute(
+            "INSERT INTO fx_rates(base, quote, rate, as_of) VALUES (?,?,?,?)",
+            ("USD", "CAD", 1.35, "2026-01-01"),
+        )
+        conn.execute(
+            "INSERT INTO fx_rates(base, quote, rate, as_of) VALUES (?,?,?,?)",
+            ("EUR", "CAD", 1.50, expected["fx_rates_as_of"]),
+        )
+
+    health = client.get("/health")
+    assert health.status_code == 200
+    assert health.json()["freshness"] == expected
+
+    deals = client.get("/deals/top", headers={"X-API-Key": DEMO_KEY})
+    assert deals.status_code == 200, deals.text
+    assert deals.json()["freshness"] == expected
 
 
 def test_deals_top_requires_auth(client):
