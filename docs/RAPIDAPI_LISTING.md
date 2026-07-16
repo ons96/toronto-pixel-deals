@@ -5,6 +5,10 @@
 > ingress, a verified recurring refresh, source-terms review, and an external
 > end-to-end test are required. No secrets are included here; `demo-free-key` is
 > an intentionally public free-tier test key for private evaluation.
+>
+> The current staging database contains static specs and bundled listing fixtures,
+> not a live market feed. `/deals/refresh` intentionally returns `503` while
+> commercial data rights and provenance remain unverified.
 
 ## API name
 
@@ -32,10 +36,10 @@ newly added weak device never inflates the rankings. The final DealScore is
 
 You can reweight the score on every call: care more about battery and less about
 the camera? Pass `battery=0.5&camera=0.1` and the rankings re-sort instantly
-against the same cached listings, no re-fetch required. Available adapters can
-populate cached hardware specs, listings, and USD-to-CAD FX data. The proposed
-Pro-tier refresh endpoint is not a freshness guarantee: clients must inspect the
-returned `freshness` values before treating cached data as current.
+against the same cached listings, no re-fetch required. The staging API serves
+cached data only. Live refresh is intentionally unavailable until each input has
+documented commercial data rights and provenance; clients must inspect returned
+`freshness` values before treating cached data as current.
 
 Target audience: used-phone buyers and resellers in Canada who want a single,
 honest quality-per-dollar ranking instead of guessing. There is no clean Google
@@ -61,7 +65,7 @@ this API fills.
 |---|---|---|---|---|
 | GET | `/health` | none | -- | `{"status":"ok","db":{"specs":22,"listings":3,"fx":0},"freshness":{"listings_fetched_at":"...","specs_fetched_at":"...","fx_rates_as_of":"..."},"version":"1.0"}` |
 | GET | `/deals/top` | counted | `n` (1-500), `cpu`,`battery`,`camera`,`display`,`form_factor` (0-1), `include_unknown` (bool) | `{"weights":{...},"count":3,"deals":[{...}],"freshness":{...},"tier":"free","used":1,"limit":100}` |
-| GET | `/deals/refresh` | counted + Pro+ | -- | `{"status":"refreshed","db":{...},"freshness":{...}}` or `403 tier_required` |
+| GET | `/deals/refresh` | counted | -- | `503 refresh_unavailable` until source rights and provenance are documented |
 | GET | `/specs/{slug}` | counted | `slug` e.g. `google-pixel-7` | `{"slug":"google-pixel-7","brand":"Google","model":"Pixel 7","antutu":875000,"battery_mah":4355,"camera_main_mp":50.0}` |
 | GET | `/specs` | counted | -- | `{"count":22,"specs":[{...}]}` |
 
@@ -80,8 +84,8 @@ when their respective tables are empty.
 |---|---|---|---|
 | Free | 100 / day | $0 | Demo + evaluation. Public key `demo-free-key` works for testing. |
 | Basic | 5,000 / day | $9 / month | Personal bots, light comparison sites. |
-| Pro | 50,000 / day | $29 / month | Includes `/deals/refresh` (on-demand fetch). Power resellers. |
-| Ultra | Unlimited | $99 / month | Unlimited + refresh. High-volume comparison platforms. |
+| Pro | 50,000 / day | $29 / month | Proposed cached-data tier; no live refresh. |
+| Ultra | Unlimited | $99 / month | Proposed cached-data tier; no live refresh. |
 
 > Suggested prices are a starting point; adjust to your market. The free tier is
 > intentionally generous (100/day) so developers can build and demo against it.

@@ -10,7 +10,7 @@ CPU / Battery / Camera.
 - **Python 3.12** + **uv** for env management
 - **SQLite** (stdlib, zero server) for local storage
 - **Flask** (10MB RAM) + vanilla JS for the UI
-- **curl-cffi** for Kimovil Cloudflare bypass when running from residential IP
+- **curl-cffi** for private/local Kimovil staging experiments
 - **ebay_rest** (Mate Csaj, MIT) for eBay Browse API
 - **Frankfurter API** for free no-auth USD->CAD FX
 - **Reddit JSON** (`.json` suffix) for r/CanadianHardwareSwap
@@ -29,7 +29,8 @@ uv pip install -r requirements.txt
 export EBAY_CLIENT_ID="..."
 export EBAY_CLIENT_SECRET="..."
 
-# Fetch live data (Kimovil + Reddit + FX; eBay if creds set)
+# Private/local staging only; do not use fetched data in a public or commercial
+# service until each source's rights and provenance are documented.
 uv run python -m src.fetch
 
 # Score the cached data
@@ -53,17 +54,18 @@ fetch  -> SQLite (data/deals.db) <- score -> Flask UI
 ```
 
 Static spec baseline lives in `data/static_specs.json` (curated, offline-first).
-The Kimovil scraper will update those prices when reachable, but the app
-is fully functional offline.
+The local staging fetcher can attempt external adapters, but the app remains
+functional offline. See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) before
+using any external data in a public or commercial service.
 
 ## Data sources
 
 | Source | Auth | Notes |
 |---|---|---|
-| Kimovil | None | Cloudflare-gated; tries `curl-cffi` Chrome impersonation, falls back to static |
-| eBay Browse | OAuth client_id/secret | Free tier, 5k calls/day |
-| Reddit JSON | None | `.json` suffix on any URL; identifies via User-Agent |
-| Frankfurter | None | ECB-backed FX rates |
+| Kimovil | None | Private/local staging adapter; not enabled for commercial API refresh |
+| eBay Browse | OAuth client_id/secret | Adapter is inactive without credentials; commercial display/reuse review pending |
+| Reddit JSON | None | Private/local staging adapter; not enabled for commercial API refresh |
+| Frankfurter | None | Auxiliary FX adapter; underlying provider terms still require review |
 
 ## Scoring
 
@@ -105,7 +107,7 @@ Interactive docs at `http://localhost:8100/docs`.
 |---|---|---|---|
 | GET | `/health` | none (not counted) | row counts plus exact database freshness metadata |
 | GET | `/deals/top` | counted | `n` (1-500), weight overrides `cpu/battery/camera/display/form_factor` (0-1), `include_unknown`; response includes freshness metadata |
-| GET | `/deals/refresh` | counted + Pro+ tier | triggers a fetch; 503 on network/CF failure, 403 below Pro; successful response includes freshness metadata |
+| GET | `/deals/refresh` | counted | always `503 refresh_unavailable`; live refresh is disabled while commercial data rights are documented |
 | GET | `/specs/{slug}` | counted | 404 if slug not found |
 | GET | `/specs` | counted | all specs |
 
@@ -130,8 +132,8 @@ when its table has no rows.
 |---|---|---|
 | free | 100 | `demo-free-key` (public, for testing) |
 | basic | 5,000 | -- |
-| pro | 50,000 | -- (includes `/deals/refresh`) |
-| ultra | unlimited | -- |
+| pro | 50,000 | -- (cached data only) |
+| ultra | unlimited | -- (cached data only) |
 
 The demo key `demo-free-key` is seeded automatically by `init_db()` and is
 intentionally public so the API works out-of-the-box for evaluation. Real keys

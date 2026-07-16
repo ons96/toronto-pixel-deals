@@ -12,15 +12,11 @@ or:
 from __future__ import annotations
 
 import logging
-import subprocess
-import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
 from src.db import (
     DEMO_KEY,
     all_listings,
@@ -210,64 +206,18 @@ def deals_top(
 
 @app.get("/deals/refresh")
 def deals_refresh(
-    request: Request,
-    caller: dict = Depends(require_api_key),
-) -> JSONResponse:
-    """Trigger a data fetch (paid feature: pro/ultra tiers only).
-
-    Shells out to ``python -m src.fetch --sample-reddit`` so the fetcher's
-    argparse entrypoint stays the single source of fetch behaviour. Returns
-    503 with a clear message if the fetch fails (offline / CF block).
-    """
-    if caller["tier"] not in ("pro", "ultra"):
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "error": "tier_required",
-                "message": "Deals refresh is a Pro+ feature. Upgrade your tier.",
-                "tier": caller["tier"],
-            },
-        )
-
-    root = Path(__file__).resolve().parent.parent
-    try:
-        proc = subprocess.run(
-            [sys.executable, "-m", "src.fetch", "--sample-reddit"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-    except subprocess.TimeoutExpired:
-        raise HTTPException(
-            status_code=503,
-            detail={"error": "fetch_timeout", "message": "Data fetch timed out (120s)."},
-        )
-    except Exception as e:  # pragma: no cover - defensive
-        raise HTTPException(
-            status_code=503,
-            detail={"error": "fetch_failed", "message": f"Could not run fetch: {e}"},
-        )
-
-    if proc.returncode != 0:
-        # Fetcher exited non-zero (network down, CF block, etc.) -> 503, do not crash.
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "error": "fetch_failed",
-                "message": "Data fetch did not complete. The service is still serving cached data.",
-                "returncode": proc.returncode,
-                "stderr_tail": (proc.stderr or "").strip().splitlines()[-1] if proc.stderr else "",
-            },
-        )
-
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": "refreshed",
-            "db": counts(),
+    _: dict = Depends(require_api_key),
+) -> None:
+    """Fail closed until commercial data rights and provenance are documented."""
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "error": "refresh_unavailable",
+            "message": (
+                "Live refresh is disabled in private staging pending documented "
+                "commercial data rights. The service serves cached data only."
+            ),
             "freshness": freshness(),
-            "stdout_tail": (proc.stdout or "").strip().splitlines()[-1] if proc.stdout else "",
         },
     )
 

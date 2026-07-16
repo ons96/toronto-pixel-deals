@@ -177,11 +177,17 @@ def test_spec_one_404(client):
     assert r.status_code == 404
 
 
-def test_refresh_tier_gate(client):
-    # Demo key is free tier -> refresh must be 403.
-    r = client.get("/deals/refresh", headers={"X-API-Key": DEMO_KEY})
-    assert r.status_code == 403
-    assert r.json()["detail"]["error"] == "tier_required"
+@pytest.mark.parametrize("key", [DEMO_KEY, "pro-test-key"])
+def test_refresh_is_unavailable_for_all_tiers(client, key):
+    if key != DEMO_KEY:
+        with db.conn_ctx() as conn:
+            conn.execute("INSERT INTO api_keys(key, tier) VALUES (?, ?)", (key, "pro"))
+
+    r = client.get("/deals/refresh", headers={"X-API-Key": key})
+    assert r.status_code == 503
+    detail = r.json()["detail"]
+    assert detail["error"] == "refresh_unavailable"
+    assert "freshness" in detail
 
 
 def test_rapidapi_secret_header_accepted(client):
