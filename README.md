@@ -1,9 +1,9 @@
 # Pixel Deal Aggregator (Toronto/GTA)
 
-Local used/refurbished smartphone deal aggregator for Google Pixel (4a-9) and
-mid-range alternatives (OnePlus, Samsung). Scores deals by quality-per-dollar
-in CAD, factoring Ontario HST (13%) and a user-tunable weight slider for
-CPU / Battery / Camera.
+Private-staging used/refurbished smartphone scoring prototype for Google Pixel
+(4a-9) and mid-range alternatives (OnePlus, Samsung). It ranks bundled fixture
+rows by quality-per-dollar in CAD using an Ontario HST estimate where applicable
+and user-tunable CPU / Battery / Camera weights.
 
 ## Stack (chosen for low-spec hardware)
 
@@ -25,13 +25,8 @@ uv venv .venv --python 3.12
 source .venv/bin/activate
 uv pip install -r requirements.txt
 
-# Optional: set eBay creds (free, register at https://developer.ebay.com)
-export EBAY_CLIENT_ID="..."
-export EBAY_CLIENT_SECRET="..."
-
-# Private/local staging only; do not use fetched data in a public or commercial
-# service until each source's rights and provenance are documented.
-uv run python -m src.fetch
+# Private fixture staging; makes no third-party network requests.
+uv run python -c 'from src.kimovil import seed_static; from src.reddit import load_sample_data; seed_static(); load_sample_data()'
 
 # Score the cached data
 uv run python -m src.score --top 20
@@ -44,19 +39,16 @@ uv run python -m src.app
 ## Architecture
 
 ```
-fetch  -> SQLite (data/deals.db) <- score -> Flask UI
-  |            |                          |
-  |            +-- spec rows joined       +-- weight sliders
-  +-- Kimovil (live, CF-protected)            re-rank w/o re-fetch
-  +-- eBay Browse (creds needed)
-  +-- Reddit JSON
-  +-- Frankfurter FX
+fixture seed -> SQLite (data/deals.db) <- score -> Flask UI
+                  |                          |
+                  +-- spec rows joined       +-- weight sliders
+                  +-- bundled specifications and listing fixtures
 ```
 
-Static spec baseline lives in `data/static_specs.json` (curated, offline-first).
-The local staging fetcher can attempt external adapters, but the app remains
-functional offline. See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) before
-using any external data in a public or commercial service.
+Static spec baseline lives in `data/static_specs.json`. External adapters remain
+for private/local research only and are not part of the default fixture setup or
+API refresh path. See [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) before using
+any external data in a public or commercial service.
 
 ## Data sources
 
@@ -69,13 +61,16 @@ using any external data in a public or commercial service.
 
 ## Scoring
 
-`NetCost = (Asking + Shipping) * 1.13` (Ontario HST)
+`EstimatedCost = (Asking + Shipping) * 1.13` (Ontario HST assumption where applicable)
 `QualityScore = 100 * (w_cpu*N(cpu) + w_bat*N(bat) + w_cam*N(cam))`
 where weights `w_*` sum to 1 and `N(*)` is min-max normalized [0,1] against
 **static** baselines (e.g. AnTuTu min=200k, max=2.5M) so the score never
 inflates as new weaker devices enter the database.
 
-`DealScore = (QualityScore / NetCost) * 1000` (higher = better deal).
+`DealScore = (QualityScore / EstimatedCost) * 1000` (higher = better deal).
+
+The API retains the compatibility field name `net_cost_cad`; it is an estimate,
+not a checkout quote. Taxes, fees, shipping, and availability can differ.
 
 ## API mode (FastAPI service)
 
@@ -93,7 +88,7 @@ end-to-end test.
 
 ```bash
 uv pip install -r requirements.txt
-uv run uvicorn src.api:app --port 8100          # server
+uv run uvicorn src.api:app --host 127.0.0.1 --port 8100  # private server
 # or
 uv run python -m src.api                          # same, via __main__
 uv run python -m src.api --smoke                  # inline TestClient smoke

@@ -47,7 +47,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Toronto Pixel Deal Score API",
     version=API_VERSION,
-    description="Rank used/refurbished Google Pixel (and mid-range alt) deals by quality-per-CAD with Ontario HST.",
+    description=(
+        "Rank cached fixture rows by quality-per-CAD using an Ontario HST "
+        "estimate where applicable."
+    ),
     lifespan=lifespan,
 )
 
@@ -292,7 +295,7 @@ def main() -> int:
     import argparse
 
     p = argparse.ArgumentParser(description="Toronto Pixel Deal Score API")
-    p.add_argument("--host", default="0.0.0.0")
+    p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8100)
     p.add_argument("--smoke", action="store_true", help="run inline smoke and exit")
     p.add_argument("--reload", action="store_true")

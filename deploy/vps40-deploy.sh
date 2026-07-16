@@ -1,93 +1,63 @@
 #!/usr/bin/env bash
-# deploy/vps40-deploy.sh - Deploy the Toronto Pixel Deal Score API to VPS-40.
-#
-# Idempotent: safe to re-run. Sets up uv venv, installs deps, seeds the DB
-# with offline sample data, installs+starts a systemd service on port 8100.
-#
-# Target: VPS-40 (Oracle Cloud free tier, 1GB RAM), Tailscale IP 100.71.95.75.
-# The VPS already runs the LLM gateway on :8000 (Tailscale-only). This API
-# uses :8100 to avoid that conflict. uvicorn runs with --workers 1 because
-# SQLite is a single-writer store (see the ponytail note in src/api.py).
-#
-# Usage (from the laptop):
-#   bash deploy/vps40-deploy.sh
-# The script detects whether it is already running on the VPS. If not, it
-# copies itself over SSH and runs remotely. To do it manually instead:
-#   scp -i ~/.ssh/oracle.key deploy/vps40-deploy.sh ubuntu@100.71.95.75:~/pd-deploy.sh
-#   ssh -i ~/.ssh/oracle.key ubuntu@100.71.95.75 'bash ~/pd-deploy.sh'
-#
-# Firewall note: VPS-40 only exposes :8000 to Tailscale (100.64.0.0/10) today.
-# To reach :8100 from other Tailscale peers, open it:
-#   sudo iptables -I INPUT -p tcp --dport 8100 -s 100.64.0.0/10 -j ACCEPT
-#   sudo netfilter-persistent save
-# Or reverse-proxy :8100 through the existing gateway. This script does NOT
-# touch iptables -- that is a user decision documented here only.
+# Private-staging deploy only. It binds the API to loopback and seeds fixtures.
 set -euo pipefail
 
-VPS_IP="100.71.95.75"
-SSH_USER="ubuntu"
-SSH_KEY="${HOME}/.ssh/oracle.key"
-REPO_DIR="${HOME}/toronto-pixel-deals"
+SSH_USER="${VPS40_USER:-ubuntu}"
+SSH_KEY="${VPS40_SSH_KEY:-${HOME}/.ssh/oracle.key}"
+VPS_HOST="${VPS40_HOST:-}"
+REPO_DIR="${PIXEL_REPO_DIR:-${HOME}/toronto-pixel-deals}"
 SERVICE_NAME="pixel-deals-api"
 PORT="8100"
+BIND_HOST="127.0.0.1"
+SCRIPT_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/$(basename -- "${BASH_SOURCE[0]}")"
 
-# Detect whether we are already running on the VPS by checking if the
-# Tailscale IP is bound to a local interface (more reliable than hostname).
-on_vps() {
-  ip -o addr 2>/dev/null | grep -qw "${VPS_IP}" && return 0
-  hostname -I 2>/dev/null | tr ' ' '\n' | grep -qw "${VPS_IP}" && return 0
-  return 1
-}
-
-# If not on the VPS, ship this script over and run it there.
-if ! on_vps; then
-  echo "Not on VPS-40 (${VPS_IP}). Copying this script over SSH and running it remotely..."
-  if [[ ! -f "${SSH_KEY}" ]]; then
+if [[ "${PIXEL_DEPLOY_REMOTE:-}" != "1" ]]; then
+  [[ -n "${VPS_HOST}" ]] || {
+    echo "ERROR: set VPS40_HOST to a pre-verified SSH host or alias" >&2
+    exit 1
+  }
+  [[ -f "${SSH_KEY}" ]] || {
     echo "ERROR: SSH key not found at ${SSH_KEY}" >&2
     exit 1
-  fi
-  remote_tmp="\$(mktemp)/pd-deploy.sh"
-  scp -i "${SSH_KEY}" -o StrictHostKeyChecking=accept-new "$0" "${SSH_USER}@${VPS_IP}:/tmp/pd-deploy.sh"
-  ssh -i "${SSH_KEY}" "${SSH_USER}@${VPS_IP}" 'bash /tmp/pd-deploy.sh'
+  }
+
+  scp -i "${SSH_KEY}" -o StrictHostKeyChecking=yes "${SCRIPT_PATH}" \
+    "${SSH_USER}@${VPS_HOST}:/tmp/pixel-deals-deploy.sh"
+  ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=yes "${SSH_USER}@${VPS_HOST}" \
+    'PIXEL_DEPLOY_REMOTE=1 bash /tmp/pixel-deals-deploy.sh'
   exit $?
 fi
 
-echo ">> Running on VPS-40 (${VPS_IP}). Starting deploy."
+[[ -d "${REPO_DIR}/.git" ]] || {
+  echo "ERROR: expected an existing repository at ${REPO_DIR}" >&2
+  exit 1
+}
+command -v uv >/dev/null 2>&1 || {
+  echo "ERROR: install a verified uv binary before deployment" >&2
+  exit 1
+}
 
-# --- 1. Clone or pull the repo ---
-if [[ -d "${REPO_DIR}/.git" ]]; then
-  echo ">> Repo exists, pulling latest..."
-  git -C "${REPO_DIR}" pull --ff-only || echo "WARN: pull failed (maybe no upstream), continuing with current tree."
-else
-  echo ">> Cloning repo into ${REPO_DIR}..."
-  git clone https://github.com/ons96/toronto-pixel-deals.git "${REPO_DIR}"
-fi
-
+echo ">> Updating private staging source..."
+git -C "${REPO_DIR}" pull --ff-only origin main
 cd "${REPO_DIR}"
 
-# --- 2. uv venv + deps ---
-if ! command -v uv >/dev/null 2>&1; then
-  echo ">> uv not found, installing..."
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  export PATH="${HOME}/.local/bin:${PATH}"
-fi
-
-echo ">> Creating venv (python 3.12) and installing deps..."
+echo ">> Creating venv and installing dependencies..."
 uv venv .venv --python 3.12
 uv pip install -r requirements.txt
 
-# --- 3. Seed the DB with offline sample data ---
-echo ">> Seeding DB with offline sample data (specs + sample Reddit listings)..."
-uv run python -m src.fetch --sample-reddit
-echo ">> DB counts:"
-uv run python -c "from src.db import counts, init_db; init_db(); print(counts())"
+# ponytail: fixture-only staging avoids unreviewed source data; replace only
+# after each source has documented public/commercial rights and provenance.
+echo ">> Replacing the staging database with bundled fixtures..."
+sudo systemctl stop "${SERVICE_NAME}.service" 2>/dev/null || true
+rm -f data/deals.db data/deals.db-shm data/deals.db-wal
+uv run python -c 'from src.kimovil import seed_static; from src.reddit import load_sample_data; seed_static(); load_sample_data()'
+uv run python -c 'from src.db import counts; print(counts())'
 
-# --- 4. Install systemd unit ---
-echo ">> Installing systemd unit ${SERVICE_NAME}.service..."
+echo ">> Installing ${SERVICE_NAME}.service..."
 UNIT_PATH="/etc/systemd/system/${SERVICE_NAME}.service"
-cat > /tmp/${SERVICE_NAME}.service <<UNIT
+cat > "/tmp/${SERVICE_NAME}.service" <<UNIT
 [Unit]
-Description=Toronto Pixel Deal Score API (FastAPI/uvicorn)
+Description=Toronto Pixel Deal Score API (private staging)
 After=network.target
 
 [Service]
@@ -95,38 +65,50 @@ Type=simple
 User=${SSH_USER}
 WorkingDirectory=${REPO_DIR}
 Environment=PATH=${REPO_DIR}/.venv/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=${REPO_DIR}/.venv/bin/uvicorn src.api:app --host 0.0.0.0 --port ${PORT} --workers 1
+ExecStart=${REPO_DIR}/.venv/bin/uvicorn src.api:app --host ${BIND_HOST} --port ${PORT} --workers 1
 Restart=on-failure
 RestartSec=5
+MemoryHigh=100M
+MemoryMax=120M
+NoNewPrivileges=true
 
 [Install]
 WantedBy=multi-user.target
 UNIT
 
-sudo cp /tmp/${SERVICE_NAME}.service "${UNIT_PATH}"
+sudo install -m 0644 "/tmp/${SERVICE_NAME}.service" "${UNIT_PATH}"
 sudo systemctl daemon-reload
 sudo systemctl enable "${SERVICE_NAME}.service"
 sudo systemctl restart "${SERVICE_NAME}.service"
 
-# --- 5. Wait for it to come up, then smoke test ---
-echo ">> Waiting for service to bind :${PORT}..."
-for i in $(seq 1 15); do
-  if curl -sf "http://localhost:${PORT}/health" >/dev/null 2>&1; then
+echo ">> Waiting for local service health..."
+ready=""
+for _ in $(seq 1 15); do
+  if curl -fsS "http://${BIND_HOST}:${PORT}/health" >/dev/null; then
+    ready=1
     break
   fi
   sleep 1
 done
+[[ -n "${ready}" ]] || {
+  sudo systemctl status "${SERVICE_NAME}.service" --no-pager >&2 || true
+  echo "ERROR: service failed health check" >&2
+  exit 1
+}
 
-echo
-echo "================ SMOKE TEST ================"
-echo "-- /health (no auth, not counted):"
-curl -s "http://localhost:${PORT}/health" ; echo
-echo "-- /deals/top?n=5 (demo free key):"
-curl -s -H "X-API-Key: demo-free-key" "http://localhost:${PORT}/deals/top?n=5" ; echo
-echo "-- /specs (demo free key):"
-curl -s -H "X-API-Key: demo-free-key" "http://localhost:${PORT}/specs" ; echo
-echo "==========================================="
-echo
-echo "Deploy done. Service: sudo systemctl status ${SERVICE_NAME}"
-echo "Docs:       http://${VPS_IP}:${PORT}/docs  (from a Tailscale peer, once :${PORT} is opened)"
-echo "Logs:       sudo journalctl -u ${SERVICE_NAME} -f"
+echo "-- /health:"
+curl -fsS "http://${BIND_HOST}:${PORT}/health"; echo
+echo "-- /deals/top?n=5:"
+curl -fsS -H "X-API-Key: demo-free-key" "http://${BIND_HOST}:${PORT}/deals/top?n=5"; echo
+refresh_status="$(curl -sS -o /dev/null -w '%{http_code}' -H "X-API-Key: demo-free-key" "http://${BIND_HOST}:${PORT}/deals/refresh")"
+[[ "${refresh_status}" == "503" ]] || {
+  echo "ERROR: expected disabled refresh to return 503, got ${refresh_status}" >&2
+  exit 1
+}
+sudo ss -ltnH "sport = :${PORT}" | grep -q "${BIND_HOST}:${PORT}" || {
+  echo "ERROR: ${SERVICE_NAME} is not loopback-only" >&2
+  exit 1
+}
+
+echo "Deploy complete: private loopback staging only."
+echo "Logs: sudo journalctl -u ${SERVICE_NAME} -f"
