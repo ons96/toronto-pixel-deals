@@ -61,13 +61,39 @@ CREATE TABLE IF NOT EXISTS fx_rates (
     as_of TEXT NOT NULL,
     PRIMARY KEY (base, quote, as_of)
 );
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    key TEXT PRIMARY KEY,
+    tier TEXT NOT NULL,
+    contact TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS api_usage (
+    key TEXT NOT NULL,
+    date TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (key, date)
+);
+CREATE INDEX IF NOT EXISTS idx_api_usage_date ON api_usage(date);
 """
+
+
+DEMO_KEY = "demo-free-key"
 
 
 def init_db(path: Path = DB_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(path) as conn:
         conn.executescript(SCHEMA)
+        # Seed a demo free key so the API works out-of-the-box for testing.
+        n = conn.execute("SELECT COUNT(*) FROM api_keys").fetchone()[0]
+        if n == 0:
+            conn.execute(
+                "INSERT INTO api_keys(key, tier, contact) VALUES (?,?,?)",
+                (DEMO_KEY, "free", "demo/test key, intentionally public"),
+            )
         conn.commit()
 
 
@@ -207,3 +233,65 @@ def counts() -> dict[str, int]:
             "listings": c.execute("SELECT COUNT(*) FROM listings").fetchone()[0],
             "fx": c.execute("SELECT COUNT(*) FROM fx_rates").fetchone()[0],
         }
+
+
+# --- API key + usage helpers (RapidAPI-style usage caps) ---
+# ponytail: SQLite single-writer is the ceiling here. The VPS deploy is a
+# single uvicorn process, so there is no write contention. Upgrade path: move
+# usage counting to Redis (INCR + EXPIRE) if you scale to multiple workers or
+# need sub-millisecond counters; SQLite stays the source of truth for keys/tiers.
+
+# Tier -> daily request cap. None means unlimited (ultra tier).
+TIER_LIMITS: dict[str, int | None] = {
+    "free": 100,
+    "basic": 5000,
+    "pro": 50000,
+    "ultra": None,
+}
+
+
+def get_api_key(key: str) -> sqlite3.Row | None:
+    """Return the api_keys row for ``key`` if active, else None."""
+    with conn_ctx() as c:
+        return c.execute(
+            "SELECT * FROM api_keys WHERE key=? AND active=1",
+            (key,),
+        ).fetchone()
+
+
+def _today_utc() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def today_usage(key: str) -> int:
+    """Today's (UTC) request count for ``key`` (0 if none yet)."""
+    with conn_ctx() as c:
+        row = c.execute(
+            "SELECT count FROM api_usage WHERE key=? AND date=?",
+            (key, _today_utc()),
+        ).fetchone()
+    return int(row["count"]) if row else 0
+
+
+def incr_usage(key: str) -> int:
+    """Atomically increment today's counter and return the new value."""
+    today = _today_utc()
+    with conn_ctx() as c:
+        c.execute(
+            """
+            INSERT INTO api_usage(key, date, count) VALUES (?,?,1)
+            ON CONFLICT(key, date) DO UPDATE SET count = count + 1
+            """,
+            (key, today),
+        )
+        row = c.execute(
+            "SELECT count FROM api_usage WHERE key=? AND date=?",
+            (key, today),
+        ).fetchone()
+    return int(row["count"]) if row else 1
+
+
+def tier_limit(tier: str) -> int | None:
+    """Daily request cap for ``tier`` (None = unlimited)."""
+    return TIER_LIMITS.get(tier)

@@ -74,3 +74,69 @@ where weights `w_*` sum to 1 and `N(*)` is min-max normalized [0,1] against
 inflates as new weaker devices enter the database.
 
 `DealScore = (QualityScore / NetCost) * 1000` (higher = better deal).
+
+## API mode (FastAPI service)
+
+A FastAPI service (`src/api.py`) exposes the scoring logic as REST endpoints
+with RapidAPI-style usage caps. It is **additive** -- it imports and reuses
+`score.py` / `db.py` / `config.py` without duplicating them, and the Flask UI
+(`app.py`) stays functional for browsing.
+
+### Run
+
+```bash
+uv pip install -r requirements.txt
+uv run uvicorn src.api:app --port 8100          # server
+# or
+uv run python -m src.api                          # same, via __main__
+uv run python -m src.api --smoke                  # inline TestClient smoke
+```
+
+Interactive docs at `http://localhost:8100/docs`.
+
+### Endpoints
+
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/health` | none (not counted) | `{"status":"ok","db":counts(),"version":"1.0"}` |
+| GET | `/deals/top` | counted | `n` (1-500), weight overrides `cpu/battery/camera/display/form_factor` (0-1), `include_unknown` |
+| GET | `/deals/refresh` | counted + Pro+ tier | triggers a fetch; 503 on network/CF failure, 403 below Pro |
+| GET | `/specs/{slug}` | counted | 404 if slug not found |
+| GET | `/specs` | counted | all specs |
+
+### Auth and usage caps
+
+Send one header per request:
+- `X-RapidAPI-Proxy-Secret` -- injected by RapidAPI in production.
+- `X-API-Key` -- for direct / own customers.
+
+Missing or unknown key returns `401`. Over the daily limit returns `429` with
+`limit`, `used`, `tier`, and `resets_at` (next midnight UTC). `/health` is not
+counted, so uptime checks do not burn quota.
+
+### Tiers
+
+| Tier | Daily limit | Demo key |
+|---|---|---|
+| free | 100 | `demo-free-key` (public, for testing) |
+| basic | 5,000 | -- |
+| pro | 50,000 | -- (includes `/deals/refresh`) |
+| ultra | unlimited | -- |
+
+The demo key `demo-free-key` is seeded automatically by `init_db()` and is
+intentionally public so the API works out-of-the-box for evaluation. Real keys
+are added to the `api_keys` table (never commit real secrets). Counters live in
+an `api_usage` table partitioned by date; SQLite is the single source of truth on
+this single-process deploy (see the `ponytail:` note in `src/api.py` for the
+upgrade path to Redis if you scale to multiple workers).
+
+### Deploy
+
+See `deploy/vps40-deploy.sh` (idempotent, targets VPS-40 on port 8100) and the
+RapidAPI listing copy at `docs/RAPIDAPI_LISTING.md`.
+
+### Tests
+
+```bash
+uv run pytest tests/test_api.py -v
+```

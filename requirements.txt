@@ -1,3 +1,4 @@
+# Flask UI layer (app.py) + scoring/fetch deps
 flask==3.1.3
 requests==2.32.5
 httpx==0.28.1
@@ -5,3 +6,12 @@ curl-cffi==0.15.0
 beautifulsoup4==4.14.3
 lxml==6.1.1
 rich==13.7.1
+
+# FastAPI API layer (api.py) - added on top of the Flask UI.
+# One combined requirements.txt is simpler than a second file: the API and UI
+# share the same scoring/db modules and the same venv on a 1GB VPS.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Tests
+pytest==8.3.4
