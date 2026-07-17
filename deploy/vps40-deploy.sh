@@ -44,7 +44,7 @@ git -C "${REPO_DIR}" pull --ff-only origin main
 cd "${REPO_DIR}"
 
 echo ">> Creating venv and installing dependencies..."
-uv venv .venv --python 3.12
+uv venv .venv --python 3.12 --allow-existing
 uv pip install -r requirements.txt
 
 # ponytail: fixture-only staging avoids unreviewed source data; replace only
