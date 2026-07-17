@@ -32,6 +32,8 @@ fi
   echo "ERROR: expected an existing repository at ${REPO_DIR}" >&2
   exit 1
 }
+# uv's standard per-user install directory is absent from non-interactive SSH PATH.
+[[ -x "${HOME}/.local/bin/uv" ]] && export PATH="${HOME}/.local/bin:${PATH}"
 command -v uv >/dev/null 2>&1 || {
   echo "ERROR: install a verified uv binary before deployment" >&2
   exit 1
